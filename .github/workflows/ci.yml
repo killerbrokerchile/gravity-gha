@@ -1,29 +1,28 @@
-name: CI  # Nombre del workflow
-
-on:  # Evento que activa el workflow
+on:
   push:
-    branches:
-      - master  # Se ignora la rama master
+    branches-ignore:
+    - master
 
+name: CI
 jobs:
   docker:
-    runs-on: ubuntu-latest  # El trabajo se ejecuta en una máquina virtual Ubuntu
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Set up QEMU  # Configuración de QEMU para la emulación de arquitecturas
+      -
+        name: Set up QEMU
         uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx  # Configuración de Docker Buildx para compilaciones multiplataforma
+      -
+        name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub  # Inicia sesión en Docker Hub
+      -
+        name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and (not) push  # Construye la imagen pero no la sube a Docker Hub
+      -
+        name: Build and (not) push
         uses: docker/build-push-action@v5
         with:
-          push: false  # La imagen no se empuja a Docker Hub
-          tags: 63038688/gravity-gha:${{ github.sha }}  # Etiqueta con el hash del commit
+          push: false
+          tags: pablokbs/prueba-gha:${{ github.sha }}
