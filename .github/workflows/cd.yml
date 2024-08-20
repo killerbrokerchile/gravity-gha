@@ -6,58 +6,67 @@ on:  # Evento que activa el workflow
       - master  # Se ejecuta en el push a la rama master
 
 jobs:
-  build-and-deploy:
+  docker:
     runs-on: ubuntu-latest  # El trabajo se ejecuta en una máquina virtual Ubuntu
 
     steps:
-    - name: Checkout code  # Paso para clonar el código del repositorio
-      uses: actions/checkout@v3
+      - name: Set up QEMU  # Configuración de QEMU para la emulación de arquitecturas
+        uses: docker/setup-qemu-action@v3
 
-    - name: Set up Docker Buildx  # Configuración de Docker Buildx para compilaciones multiplataforma
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx  # Configuración de Docker Buildx para compilaciones multiplataforma
+        uses: docker/setup-buildx-action@v3
 
-    - name: Login to Docker Registry  # Inicia sesión en Docker Hub
-      uses: docker/login-action@v3
-      with:
-        registry: docker.io
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Login to Docker Hub  # Inicia sesión en Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push Docker image  # Compila y sube la imagen de Docker
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: your-docker-username/your-app:${{ github.sha }}  # Reemplaza con tu nombre de usuario y aplicación
+      - name: Build and push  # Compila y sube la imagen de Docker
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: 63038688/gravity-gha:${{ github.sha }}  # Etiqueta con el hash del commit
 
-    # Configuración de kubeconfig para conectarse al clúster de Kubernetes
-    - name: Set up kubeconfig  
-      run: |
-        mkdir -p $HOME/.kube
-        echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
-      env:  # Se asegura que la variable de entorno KUBECONFIG esté disponible
-        KUBECONFIG: $HOME/.kube/config
+  deploy-to-cluster:
+    name: Deploy to Cluster  # Despliegue al clúster de Kubernetes
+    runs-on: ubuntu-latest
+    needs: docker  # Necesita que el trabajo 'docker' se complete antes
 
-    # Crear el namespace si no existe - Se corrigió la ubicación incorrecta del 'with'
-    - name: Create namespace if not exists
-      run: |
-        kubectl get namespace prueba || kubectl create namespace prueba
+    steps:
+      # Configuración del kubeconfig para conectarse al clúster de Kubernetes
+      - name: Set up kubeconfig  
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
+        env:
+          KUBECONFIG: $HOME/.kube/config
 
-    # Actualiza la imagen del despliegue en Kubernetes - Se movió 'with' bajo 'uses' correctamente
-    - name: Update deployment image
-      uses: steebchen/kubectl@v2.0.0  # Corrección: 'with' debe ir bajo 'uses' no 'run'
-      with:
-        config: ${{ secrets.KUBE_CONFIG_DATA }}
-        command: -n prueba set image --record deployment/gravity-gha gravity-gha=your-docker-username/your-app:${{ github.sha }}
+      # Crear el namespace si no existe - Usar 'env' para pasar el KUBECONFIG
+      - name: Create namespace if not exists
+        run: kubectl create namespace prueba || true
+        env:
+          KUBECONFIG: $HOME/.kube/config
 
-    # Verificar el despliegue en Kubernetes
-    - name: Verify deployment rollout
-      uses: steebchen/kubectl@v2.0.0  # Corrección: 'with' debe ir bajo 'uses' no 'run'
-      with:
-        config: ${{ secrets.KUBE_CONFIG_DATA }}
-        command: -n prueba rollout status deployment/gravity-gha
+      # Desplegar en el clúster de Kubernetes
+      - name: Deploy to cluster
+        uses: steebchen/kubectl@v2.0.0
+        with:
+          config: ${{ secrets.KUBE_CONFIG_DATA }}
+          command: -n prueba set image --record deployment/gravity-gha gravity-gha=63038688/gravity-gha:${{ github.sha }}
 
-    # Obtener los pods en el namespace para ver el estado
-    - name: Get pods in namespace
-      run: |
-        kubectl get pods -n prueba
+      # Verificar el estado del despliegue
+      - name: Verify deployment
+        uses: steebchen/kubectl@v2.0.0
+        with:
+          config: ${{ secrets.KUBE_CONFIG_DATA }}
+          command: -n prueba rollout status deployment/gravity-gha
+
+      # Depuración y verificación de la conexión con el clúster
+      - name: Debug cluster connection
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+          kubectl get pods -n prueba
+        env:  # Se debe utilizar 'env' para pasar KUBECONFIG
+          KUBECONFIG: $HOME/.kube/config
