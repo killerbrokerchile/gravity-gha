@@ -6,40 +6,26 @@ on:  # Evento que activa el workflow
       - master  # Se ejecuta en el push a la rama master
 
 jobs:
-  docker:
-    runs-on: ubuntu-latest  # Cambia a un runner self-hosted
-    steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: 63038688/prueba-gha:${{ github.sha }}
-
   deploy-to-cluster:
     name: deploy to cluster
-    runs-on: ubuntu-latest  # Cambia a un runner self-hosted 1111
+    runs-on: self-hosted  # Se mantiene en el runner auto-hospedado macOS
     needs: docker
     steps:
-      - name: deploy to cluster
-        uses: steebchen/kubectl@v2.0.0
-        with:
-          config: ${{ secrets.KUBE_CONFIG_DATA }}
-          command: -n prueba set image --record deployment/prueba-gha prueba-gha=63038688/prueba-gha:${{ github.sha }}
+      - name: Set up kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
+        env:
+          KUBECONFIG: $HOME/.kube/config
 
-      - name: verify deployment
-        uses: steebchen/kubectl@v2.0.0
-        with:
-          config: ${{ secrets.KUBE_CONFIG_DATA }}
-          command: -n prueba rollout status deployment/prueba-gha
+      - name: Deploy to cluster with kubectl
+        run: |
+          kubectl set image --record deployment/prueba-gha prueba-gha=63038688/prueba-gha:${{ github.sha }} -n prueba
+        env:
+          KUBECONFIG: $HOME/.kube/config
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/prueba-gha -n prueba
+        env:
+          KUBECONFIG: $HOME/.kube/config
