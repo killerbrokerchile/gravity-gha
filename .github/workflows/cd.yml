@@ -42,6 +42,7 @@ jobs:
       uses: steebchen/kubectl@v2.0.0
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        KUBERNETES_SERVER: "https://192.168.65.3:6443"
         KUBECTL_VERSION: "1.28"
       with:
         config: ${{ secrets.KUBE_CONFIG_DATA }}
