@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: gravity-gha
-        image: killerbrokerchile/gravity-gha
+        image: 63038688/gravity-gha
         ports:
         - containerPort: 80
           name: http
