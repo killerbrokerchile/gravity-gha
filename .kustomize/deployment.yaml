@@ -2,20 +2,20 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-  name: prueba-gha
+  name: gravity-gha
 spec:
   replicas: 3
   selector:
     matchLabels:
-      name: prueba-gha
+      name: gravity-gha
   template:
     metadata:
       labels:
-        name: prueba-gha
+        name: gravity-gha
     spec:
       containers:
-      - name: prueba-gha
-        image: pablokbs/prueba-gha
+      - name: gravity-gha
+        image: santander/gravity-gha
         ports:
         - containerPort: 80
           name: http

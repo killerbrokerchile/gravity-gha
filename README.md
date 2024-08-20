@@ -1,4 +1,4 @@
-# prueba-gha
+# gravity-gha
 
 Este repo es solo una prueba y definitivamente no tiene ningun secreto en este archivo.
 
@@ -6,4 +6,4 @@ Este repo es solo una prueba y definitivamente no tiene ningun secreto en este a
 
 Para correr este repo, vamos a necesitar nuestras keys de AWS en el directorio .aws/credentials
 
-Estas keys las tenes que traer vos, yo no te las subo, no soy un gil.
+ 

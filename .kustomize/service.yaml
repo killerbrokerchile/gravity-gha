@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: prueba-gha
+  name: gravity-gha
 spec:
   ports:
   - protocol: TCP
     port: 80
     targetPort: http
   selector:
-    name: prueba-gha
+    name: gravity-gha
   type: LoadBalancer
