@@ -8,24 +8,17 @@ on:  # Evento que activa el workflow
 jobs:
   deploy-to-cluster:
     name: deploy to cluster
-    runs-on: self-hosted  # Se mantiene en el runner auto-hospedado macOS
+    runs-on: self-hosted  # Cambia a un runner self-hosted 1111
     needs: docker
     steps:
-      - name: Set up kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > $HOME/.kube/config
-        env:
-          KUBECONFIG: $HOME/.kube/config
+      - name: deploy to cluster
+        uses: steebchen/kubectl@v2.0.0
+        with:
+          config: ${{ secrets.KUBE_CONFIG_DATA }}
+          command: -n prueba set image --record deployment/prueba-gha prueba-gha=63038688/prueba-gha:${{ github.sha }}
 
-      - name: Deploy to cluster with kubectl
-        run: |
-          kubectl set image --record deployment/prueba-gha prueba-gha=63038688/prueba-gha:${{ github.sha }} -n prueba
-        env:
-          KUBECONFIG: $HOME/.kube/config
-
-      - name: Verify deployment
-        run: |
-          kubectl rollout status deployment/prueba-gha -n prueba
-        env:
-          KUBECONFIG: $HOME/.kube/config
+      - name: verify deployment
+        uses: steebchen/kubectl@v2.0.0
+        with:
+          config: ${{ secrets.KUBE_CONFIG_DATA }}
+          command: -n prueba rollout status deployment/prueba-gha
