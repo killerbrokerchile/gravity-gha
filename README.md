@@ -12,6 +12,6 @@ Para correr este repo, vamos a necesitar nuestras keys de AWS en el directorio .
 
 
 # KUBE_CONFIG_DATA
-'''
+```
 cat $HOME/.kube/config | base64 | pbcopy
-'''
+```
