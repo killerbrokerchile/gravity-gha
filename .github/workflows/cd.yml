@@ -29,7 +29,7 @@ jobs:
 
   deploy-to-cluster:
     name: deploy to cluster
-    runs-on: self-hosted  # Cambia a un runner self-hosted
+    runs-on: self-hosted  # Cambia a un runner self-hosted 1111
     needs: docker
     steps:
       - name: deploy to cluster
